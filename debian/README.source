@@ -5,8 +5,8 @@ btsync for Debian
 Overview
 --------
 
-[BitTorrent Sync][1] is a non-free file synchronization server from BitTorrent
-Inc, who distribute a compiled binary, but not Debian packages.
+[BitTorrent Sync][1] is a closed-source file synchronization server from
+BitTorrent Inc, who distribute a compiled binary, but not Debian packages.
 
 This project takes that binary and builds a Debian package from it.  It's
 specialized to only package the amd64 binary because that's all I needed
