@@ -1,0 +1,4 @@
+btsync: embedded-library usr/bin/btsync: sqlite
+btsync: embedded-library usr/bin/btsync: openssl
+btsync: hardening-no-relro usr/bin/btsync
+btsync: new-package-should-close-itp-bug

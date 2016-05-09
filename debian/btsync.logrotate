@@ -1,0 +1,7 @@
+/var/log/btsync/btsync.log {
+  rotate 12
+  monthly
+  compress
+  missingok
+  notifempty
+}

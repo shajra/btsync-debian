@@ -1,0 +1,21 @@
+[Unit]
+Description=BitTorrent Sync
+Documentation=man:btsync(1)
+Documentation=http://help.getsync.com
+After=network.target
+RequiresMountsFor=/run/btsync
+RequiresMountsFor=/var/lib/btsync
+RequiresMountsFor=/var/log/btsync
+ConditionPathIsReadWrite=/run/btsync
+ConditionPathIsReadWrite=/var/lib/btsync
+ConditionPathIsReadWrite=/var/log/btsync
+
+[Service]
+ExecStart=/usr/bin/btsync --config /etc/btsync.conf --log /var/log/btsync/btsync.log
+Type=forking
+PIDFile=/run/btsync/btsync.pid
+User=btsync
+ProtectSystem=yes
+
+[Install]
+WantedBy=multi-user.target

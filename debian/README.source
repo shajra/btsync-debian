@@ -1,0 +1,122 @@
+btsync for Debian
+=================
+
+
+Overview
+--------
+
+[BitTorrent Sync][1] is a non-free file synchronization server from BitTorrent
+Inc, who distribute a compiled binary, but not Debian packages.
+
+This project takes that binary and builds a Debian package from it.  It's
+specialized to only package the amd64 binary because that's all I needed
+personally.
+
+[1]: http://getsync.com
+
+
+Disclaimer
+----------
+
+This is a project I made for my own personal use.  I'm pretty sure the
+packaging is done well enough, but writing scripts for package managers is easy
+to get wrong.
+
+If you use this project, you should be okay with the possibility of having to
+repair a script in /var/lib/dpkg/info in case I made a mistake somewhere.
+
+You'll probably be fine, but I want to be explicit about risk.
+
+
+Instructions for building
+-------------------------
+
+This project relies on setting up the project with some relative pathing.
+Here's some steps that builds up a directory called "dpkg" in which we build
+Debian packages.
+
+```shell
+DEB_ROOT="$(pwd)/dpkg"
+DEB_PACKAGES="$DEB_ROOT/deb-packages"
+DEB_TMP="$DEB_ROOT/tmp"
+BTSYNC_DEB="$DEB_ROOT/btsync"
+BTSYNC_SOURCE="$DEB_PACKAGES/btsync"
+
+BTSYNC_DEB_GIT="https://github.com/shajra/btsync-debian.git"
+BTSYNC_DOWNLOAD_BASE="https://download-cdn.getsync.com/stable/linux-x64"
+BTSYNC_DOWNLOAD_SRC="$BTSYNC_DOWNLOAD_BASE/BitTorrent-Sync_x64.tar.gz"
+BTSYNC_DOWNLOAD_DEST="$BTSYNC_SOURCE/btsync.download.tar.gz"
+
+mkdir --parents "$BTSYNC_SOURCE"
+git clone "$BTSYNC_DEB_GIT" "$BTSYNC_DEB"
+curl "$BTSYNC_DOWNLOAD_SRC" > "$BTSYNC_DOWNLOAD_DEST"
+
+mkdir --parents "$DEB_TMP"
+tar zxCf "$DEB_TMP" "$BTSYNC_DOWNLOAD_DEST"
+BTSYNC_VERSION="$("$DEB_TMP/btsync" --help \
+    | grep ^BitTorrent \
+    | head -1 \
+    | perl -wln -e 'if (/([\d\.]+)\s+\((\d+)\)/) { print("$1.$2") }')"
+mv $BTSYNC_DOWNLOAD_DEST "$BTSYNC_SOURCE/btsync_${BTSYNC_VERSION}.orig.tar.gz"
+rm -rf "$DEB_TMP"
+```
+
+The gzipped tar file downloaded from BitTorrent Inc. has only the btsync
+binary, a README file, and the license.  It's not an open-source project, so
+upgrading is relatively straight-forward:
+
+- download the latest tar file to the parent directory
+
+```shell
+$ URL=https://download-cdn.getsync.com/stable/linux-x64
+$ curl "$URL/BitTorrent-Sync_x64.tar.gz" > ../btsync.orig.tar.gz
+```
+ 
+- unpack it, replacing the `btsync` binary, README, and license
+
+```shell
+$ tar zxrf ../btsync.orig.tar.gz
+```
+
+- see if the version upgraded
+
+```shell
+$ ./btsync --help \
+    | grep ^BitTorrent \
+    | head -1 \
+    | perl -wln -e 'if (/([\d\.]+)\s+\((\d+)\)/) { print("$1.$2") }' 
+```
+
+- upgrade debian/changelog as necessary before building
+
+- build the new Debian package
+
+```shell
+$ dpkg-buildpackage -b -us -uc
+```
+
+- test the integrity of the built package with Lintian
+
+```shell
+$ lintian ../btsync_*.deb
+```
+
+
+Other work
+----------
+
+Leo Moll has a [similar project with a similar name][2], but it's a lot more
+ambitious in scope:
+
+- packaging for more architectures
+- providing a Python GUI for more of a desktop experience
+
+It's possible to use the `btsync-common` package that excludes his new GUI, but
+the project seems inactive now, and the published packages are out-of-date.
+
+Ultimately, making proper Debian packages isn't too crazy, so I did the bare
+minimum to meet my needs, while trying hard to keep most Debian Policy
+compliance (some compliance is difficult because of the nature of the upstream
+compilation).
+
+[2]: https://github.com/tuxpoldo/btsync-deb

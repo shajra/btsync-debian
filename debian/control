@@ -1,0 +1,21 @@
+Source: btsync
+Section: non-free/net
+Priority: optional
+Maintainer: Sukant Hajra <rrudbskr5g@snkmail.com>
+Build-Depends:
+  debhelper (>=9),
+  dh-systemd (>=1.29),
+  libfile-fcntllock-perl (>=0.22)
+Standards-Version: 3.9.6
+Homepage: https://www.getsync.com
+
+Package: btsync
+Architecture: amd64
+Depends: ${shlibs:Depends}, ${misc:Depends}, adduser (>=3.114)
+Description: BitTorrent Inc. synchronization server
+ This is the official synchronization server from BitTorrent Inc.
+ downloadable from https://www.getsync.com/.
+ .
+ Common usages include sharing with teams, sending large files fast, sharing
+ without internet, creating a private cloud, transferring big files, and
+ secure file transfer.
