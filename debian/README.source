@@ -28,6 +28,25 @@ repair a script in /var/lib/dpkg/info in case I made a mistake somewhere.
 You'll probably be fine, but I want to be explicit about risk.
 
 
+Prerequisites
+-------------
+
+Debian allows you to build packages a lot of different ways.  I found the following
+tools simple to use, and they're used in the instructions below:
+
+- gitpkg
+- cowbuilder
+
+gitpkg will build DSC (Debian Source Control) files based on work checked
+into a Git repository.  cowbuilder, will take these DSC files and use them to
+build the final package in a chroot environment.  The chroot environment will
+help ensure that all the necessary build dependencies are declared in the
+control files.
+
+If you know what you're doing, you're free to use other tools (sbuild,
+pbuilder, cowpoke, dpkg-buildpackage, etc.).
+
+
 Instructions for building
 -------------------------
 
@@ -35,10 +54,11 @@ This project relies on setting up the project with some relative pathing.
 Here's some steps that builds up a directory called "dpkg" in which we build
 Debian packages.
 
+Here's a few variables to set up paths:
+
 ```shell
 DEB_ROOT="$(pwd)/dpkg"
 DEB_PACKAGES="$DEB_ROOT/deb-packages"
-DEB_TMP="$DEB_ROOT/tmp"
 BTSYNC_DEB="$DEB_ROOT/btsync"
 BTSYNC_SOURCE="$DEB_PACKAGES/btsync"
 
@@ -46,60 +66,72 @@ BTSYNC_DEB_GIT="https://github.com/shajra/btsync-debian.git"
 BTSYNC_DOWNLOAD_BASE="https://download-cdn.getsync.com/stable/linux-x64"
 BTSYNC_DOWNLOAD_SRC="$BTSYNC_DOWNLOAD_BASE/BitTorrent-Sync_x64.tar.gz"
 BTSYNC_DOWNLOAD_DEST="$BTSYNC_SOURCE/btsync.download.tar.gz"
+```
 
+Now, we'll set up these directories relative to the current working directory.
+
+We'll also pull in the latest tarball from the Bittorrent Sync site and name it
+according to the version of the binary included (which we cull from by calling
+it with a help switch).
+
+```shell
 mkdir --parents "$BTSYNC_SOURCE"
+
 git clone "$BTSYNC_DEB_GIT" "$BTSYNC_DEB"
 curl "$BTSYNC_DOWNLOAD_SRC" > "$BTSYNC_DOWNLOAD_DEST"
 
+DEB_TMP="$DEB_ROOT/tmp"
 mkdir --parents "$DEB_TMP"
 tar zxCf "$DEB_TMP" "$BTSYNC_DOWNLOAD_DEST"
-BTSYNC_VERSION="$("$DEB_TMP/btsync" --help \
+BTSYNC_VERSION_ORIG="$("$DEB_TMP/btsync" --help \
     | grep ^BitTorrent \
     | head -1 \
     | perl -wln -e 'if (/([\d\.]+)\s+\((\d+)\)/) { print("$1.$2") }')"
-mv $BTSYNC_DOWNLOAD_DEST "$BTSYNC_SOURCE/btsync_${BTSYNC_VERSION}.orig.tar.gz"
+mv $BTSYNC_DOWNLOAD_DEST "$BTSYNC_SOURCE/btsync_${BTSYNC_VERSION_ORIG}.orig.tar.gz"
 rm -rf "$DEB_TMP"
 ```
 
-The gzipped tar file downloaded from BitTorrent Inc. has only the btsync
-binary, a README file, and the license.  It's not an open-source project, so
-upgrading is relatively straight-forward:
-
-- download the latest tar file to the parent directory
+Next we'll use gitpkg to build get the files we'll pass to cowbuilder.  We call
+gitpkg with a tag pushed 
 
 ```shell
-$ URL=https://download-cdn.getsync.com/stable/linux-x64
-$ curl "$URL/BitTorrent-Sync_x64.tar.gz" > ../btsync.orig.tar.gz
+cd "$BTSYNC_DEB"
+BTSYNC_TAG="$(git tag | grep ^release/ | sort -Vr | head -1)"
+BTSYNC_VERSION="${BTSYNC_TAG##release/}"
+gitpkg "$BTSYNC_TAG"
 ```
- 
-- unpack it, replacing the `btsync` binary, README, and license
+
+This will create a .dsc file and diff.gz under the deb-packages directory,
+which we can then build with cowbuilder.
+
+If you haven't run cowbuilder before, you need to create a chroot for it first:
 
 ```shell
-$ tar zxrf ../btsync.orig.tar.gz
+sudo cowbuilder --create --distribution unstable
 ```
 
-- see if the version upgraded
+If you've already created it, you may want to update it:
 
 ```shell
-$ ./btsync --help \
-    | grep ^BitTorrent \
-    | head -1 \
-    | perl -wln -e 'if (/([\d\.]+)\s+\((\d+)\)/) { print("$1.$2") }' 
+sudo cowbuilder --update
 ```
 
-- upgrade debian/changelog as necessary before building
-
-- build the new Debian package
+Otherwise, we're ready to create our package:
 
 ```shell
-$ dpkg-buildpackage -b -us -uc
+sudo cowbuilder --build "${BTSYNC_SOURCE}/btsync_${BTSYNC_VERSION}.dsc"
 ```
 
-- test the integrity of the built package with Lintian
+You can test the integrity of the built package with lintian.
 
 ```shell
-$ lintian ../btsync_*.deb
+$ lintian /var/cache/pbuilder/result/btsync_${BTSYNC_VERSION}_amd64.deb
 ```
+
+Lintian should report just one line of ignored (overridden) errors and
+warnings.
+
+Finally, you can install the package.
 
 
 Other work
