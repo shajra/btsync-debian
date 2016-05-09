@@ -5,27 +5,37 @@ btsync for Debian
 Overview
 --------
 
-[BitTorrent Sync][1] is a closed-source file synchronization server from
+[BitTorrent Sync][BTSYNC] is a closed-source file synchronization server from
 BitTorrent Inc, who distribute a compiled binary, but not Debian packages.
 
 This project takes that binary and builds a Debian package from it.  It's
 specialized to only package the amd64 binary because that's all I needed
 personally.
 
-[1]: http://getsync.com
+[BTSYNC]: http://getsync.com
 
 
 Disclaimer
 ----------
 
-This is a project I made for my own personal use.  I'm pretty sure the
-packaging is done well enough, but writing scripts for package managers is easy
-to get wrong.
+- **I don't use this project anymore**.
+- **It may have some defects**.
 
-If you use this project, you should be okay with the possibility of having to
-repair a script in /var/lib/dpkg/info in case I made a mistake somewhere.
+This is a project I made for my own personal use.  Shortly after finishing it,
+I was pointed to [Syncthing][THING], which is both free/open and already
+packaged for Debian.  That said, this project will likely languish with time.
+However, I tried hard to keep things simple.  So long as the upstream tarball
+doesn't change that much, it shouldn't be difficult to update this project for
+new versions.
+
+I'm pretty sure this packaging is done well enough, but writing scripts for
+package managers is easy to get wrong.  If you use this project, you should be
+okay with the possibility of having to repair a script in /var/lib/dpkg/info in
+case I made a mistake somewhere.
 
 You'll probably be fine, but I want to be explicit about risk.
+
+[THING]: https://syncthing.net/
 
 
 Prerequisites
@@ -132,6 +142,19 @@ Lintian should report just one line of ignored (overridden) errors and
 warnings.
 
 Finally, you can install the package.
+
+
+Updating the Project
+--------------------
+
+If a new upstream version is released, the version in the changelog will be out
+of sync with the version in the downloaded tarball.  Ideally, all you have to
+do is:
+
+1. Update the changelog with a tool like debchange
+2. Commit a tag to the git repository with the change
+
+And the instructions above should guide you through the rest.
 
 
 Other work
